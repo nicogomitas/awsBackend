@@ -3,7 +3,7 @@ from flask import json
 import requests
 
 class FlaskTestCase(unittest.TestCase):
-    BASE_URL = 'http://ec2-3-85-102-61.compute-1.amazonaws.com:5000'  # Reemplaza <EC2_PUBLIC_IP> con la IP pública de tu instancia EC2
+    BASE_URL = 'http://ec2-44-203-140-8.compute-1.amazonaws.com:5000'  # Reemplaza <EC2_PUBLIC_IP> con la IP pública de tu instancia EC2
 
     def test_hello_world(self):
         response = requests.get(f'{self.BASE_URL}/')
