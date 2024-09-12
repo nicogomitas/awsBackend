@@ -24,7 +24,7 @@ jobs:
 
       - name: Run unit tests  # Este paso ejecuta las pruebas unitarias
         run: |
-          python -m unittest discover -s tests -p "*.py"
+          python -m unittest discover -s test_app -p "*.py"
 
       - name: Deploy to EC2 Instance
         env:
@@ -39,10 +39,10 @@ jobs:
           echo "$EC2_PRIVATE_KEY" > ec2_key && chmod 600 ec2_key
           ssh -o StrictHostKeyChecking=no -i ec2_key ${EC2_USER}@${SERVER_IP} '
               # Acceder al directorio del proyecto
-              cd aws-backend && ls || exit 1
+              cd awsBackend && ls || exit 1
 
               # Activar el entorno virtual
-              source env/bin/activate || exit 2
+              source venv/bin/activate || exit 2
 
               # Actualizar el código desde la rama main
               git fetch --all || exit 3
