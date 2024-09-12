@@ -1,44 +1,62 @@
-# This is a basic workflow to help you get started with Actions
+name: Deploy
 
-name: CI
-
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "master" branch
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+  Deploy:
+    name: Deploy to EC2
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
+    
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
-      - uses: aws-actions/configure-aws-credentials@v1
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: us-east-1      
-
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
-
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+          python-version: '3.x'
+          
+      - name: Install dependencies
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
-      - name: check dir
-        run: aws s3 ls
+          pip install -r requirements.txt
+
+      - name: Run unit tests  # Este paso ejecuta las pruebas unitarias
+        run: |
+          python -m unittest discover -s tests -p "*.py"
+
+      - name: Deploy to EC2 Instance
+        env:
+          EC2_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_IP: ${{ secrets.BACKEND_SSH_HOST }}
+          EC2_USER: ${{ secrets.USER_NAME }}
+          APP_DIR: /home/ubuntu/aws-backend  
+          APP_FILE: app.py
+          ENVIRONMENT: production
+      
+        run: |
+          echo "$EC2_PRIVATE_KEY" > ec2_key && chmod 600 ec2_key
+          ssh -o StrictHostKeyChecking=no -i ec2_key ${EC2_USER}@${SERVER_IP} '
+              # Acceder al directorio del proyecto
+              cd aws-backend && ls || exit 1
+
+              # Activar el entorno virtual
+              source env/bin/activate || exit 2
+
+              # Actualizar el código desde la rama main
+              git fetch --all || exit 3
+              git reset --hard origin/main || exit 4
+              git pull origin main || exit 5
+
+              # Instalar dependencias necesarias
+              pip install -r requirements.txt || exit 6
+
+              # Detener cualquier proceso que esté usando el puerto 5000
+              sudo fuser -k 5000/tcp || exit 7
+
+              # Ejecutar la aplicación Flask
+              gunicorn -b 0.0.0.0:5000 app:app --daemon || exit 8
+              
+              '
+
