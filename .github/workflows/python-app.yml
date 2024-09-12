@@ -24,7 +24,7 @@ jobs:
 
       - name: Run unit tests  # Este paso ejecuta las pruebas unitarias
         run: |
-          python -m unittest discover -s test_app -p "*.py"
+          python -m unittest discover -s tests -p "*.py"
 
       - name: Deploy to EC2 Instance
         env:
