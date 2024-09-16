@@ -1,3 +1,4 @@
+import os
 from flask import Flask, jsonify, request
 import mysql.connector
 from flask_cors import CORS
@@ -31,10 +32,16 @@ def add_user():
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute(
-            'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (%s, %s, %s)',
-            (nombre_usuario, correo, contrasena)
-        )
+        if os.getenv('FLASK_ENV') == 'testing':
+            cursor.execute(
+                'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (%s, %s, %s)',
+                (nombre_usuario, correo, contrasena)
+            )
+        else:
+            cursor.execute(
+                'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (%s, %s, %s)',
+                (nombre_usuario, correo, contrasena)
+            )
         conn.commit()
         return jsonify({'message': 'User added successfully!'})
     except Exception as e:
@@ -54,17 +61,35 @@ def get_users():
     conn.close()
     return jsonify(rows)
 
-if __name__ == '__main__':
-    app.run(port=5000, host='0.0.0.0', debug=True)
-
-# Pruebas unitarias
 class FlaskTestCase(unittest.TestCase):
-
     def setUp(self):
+        # Configura la app para pruebas
+        os.environ['FLASK_ENV'] = 'testing'
         self.app = app.test_client()
         self.app.testing = True
 
+        # Crear la tabla en SQLite en memoria
+        self.conn = get_db_connection()
+        cursor = self.conn.cursor()
+
+        # Crear tabla si no existe
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS table1 (
+                id INTEGER PRIMARY KEY AUTO_INCREMENT,
+                nombre_usuario TEXT NOT NULL,
+                correo TEXT NOT NULL,
+                contrasena TEXT NOT NULL
+            )
+        ''')
+        self.conn.commit()
+        cursor.close()
+
+    def tearDown(self):
+        # Cerrar la conexión después de cada prueba
+        self.conn.close()
+
     def test_add_user(self):
+        # Probar la adición de un usuario
         response = self.app.post('/add_user', json={
             'nombre_usuario': 'testuser',
             'correo': 'testuser@example.com',
@@ -74,8 +99,23 @@ class FlaskTestCase(unittest.TestCase):
         self.assertIn(b'User added successfully!', response.data)
 
     def test_get_users(self):
+        # Añadir un usuario de ejemplo
+        cursor = self.conn.cursor()
+        cursor.execute(
+            'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (?, ?, ?)',
+            ('testuser', 'testuser@example.com', 'testpassword')
+        )
+        self.conn.commit()
+        cursor.close()
+
+        # Probar la obtención de usuarios
         response = self.app.get('/users')
         self.assertEqual(response.status_code, 200)
+        self.assertIn(b'testuser', response.data)
 
 if __name__ == '__main__':
-    unittest.main()
+    # Ejecutar pruebas si el script se ejecuta directamente
+    if 'CI' in os.environ:
+        unittest.main()
+    else:
+        app.run(port=5000, host='0.0.0.0', debug=True)
