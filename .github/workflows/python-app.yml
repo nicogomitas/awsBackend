@@ -1,62 +1,40 @@
-name: Deploy
+name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
-  Deploy:
-    name: Deploy to EC2
+  build:
     runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
 
-      - name: Setup Python
-        uses: actions/setup-python@v2
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
-          
+          python-version: '3.12'
+
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          python -m pip install --upgrade pip
+          pip install mysql-connector-python Flask Flask-Cors
 
-      - name: Run unit tests  # Este paso ejecuta las pruebas unitarias
+      - name: Run app.py to execute unit tests
         run: |
-          python -m unittest discover -s tests -p "*.py"
+          python app.py
 
-      - name: Deploy to EC2 Instance
-        env:
-          EC2_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SERVER_IP: ${{ secrets.BACKEND_SSH_HOST }}
-          EC2_USER: ${{ secrets.USER_NAME }}
-          APP_DIR: /home/ubuntu/aws-backend  
-          APP_FILE: app.py
-          ENVIRONMENT: production
-      
+      # Optionally: Deploy to AWS or run other deployment steps
+      - name: Deploy to AWS (optional)
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
         run: |
-          echo "$EC2_PRIVATE_KEY" > ec2_key && chmod 600 ec2_key
-          ssh -o StrictHostKeyChecking=no -i ec2_key ${EC2_USER}@${SERVER_IP} '
-              # Acceder al directorio del proyecto
-              cd awsBackend && ls || exit 1
-
-              # Activar el entorno virtual
-              source venv/bin/activate || exit 2
-
-              # Actualizar el código desde la rama main
-              git fetch --all || exit 3
-              git reset --hard origin/main || exit 4
-              git pull origin main || exit 5
-
-              # Instalar dependencias necesarias
-              pip install -r requirements.txt || exit 6
-
-              # Detener cualquier proceso que esté usando el puerto 5000
-              sudo fuser -k 5000/tcp || exit 7
-
-              # Ejecutar la aplicación Flask
-              gunicorn -b 0.0.0.0:5000 app:app --daemon || exit 8
-              
-              '
-
+          aws s3 ls
