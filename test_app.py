@@ -1,5 +1,6 @@
 import unittest
 import os
+import sqlite3
 from app import app, get_db_connection
 
 class FlaskTestCase(unittest.TestCase):
@@ -15,7 +16,7 @@ class FlaskTestCase(unittest.TestCase):
         # Crear tabla si no existe
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS table1 (
-                id INTEGER PRIMARY KEY AUTO_INCREMENT,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 nombre_usuario TEXT NOT NULL,
                 correo TEXT NOT NULL,
                 contrasena TEXT NOT NULL
@@ -43,7 +44,7 @@ class FlaskTestCase(unittest.TestCase):
     def test_get_users(self):
         cursor = self.conn.cursor()
         cursor.execute(
-            'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (%s, %s, %s)',
+            'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (?, ?, ?)',
             ('prueba2user', 'test2@example.com', 'testpassword')
         )
         self.conn.commit()
