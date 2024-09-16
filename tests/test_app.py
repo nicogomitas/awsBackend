@@ -49,5 +49,5 @@ class FlaskTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'testuser', response.data)
 
-if _name_ == '_main_':
+if __name__ == '__main__':
     unittest.main()
