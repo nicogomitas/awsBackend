@@ -22,6 +22,23 @@ def get_db_connection():
             database='USERS'
         )
 
+@app.before_first_request
+def setup_database():
+    if 'test' in app.config['ENV']:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS table1 (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre_usuario TEXT,
+                correo TEXT,
+                contrasena TEXT,
+                fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+        conn.close()
+
 @app.route('/')
 def hello_world():
     return 'Hello, World!'
