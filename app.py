@@ -1,43 +1,43 @@
 import os
-import sqlite3  # Asegúrate de importar sqlite3
+import sqlite3
 from flask import Flask, jsonify, request
 import mysql.connector
 from flask_cors import CORS
 
 app = Flask(__name__)
 
-# Configuración de CORS para permitir solicitudes desde tu frontend
+# Configuración de CORS
 CORS(app, resources={r"/*": {"origins": "http://ec2-18-205-177-229.compute-1.amazonaws.com:3000"}})
 
 def get_db_connection():
     if os.getenv('FLASK_ENV') == 'testing':
         # Usar SQLite en memoria para pruebas
-        return sqlite3.connect(':memory:')
+        conn = sqlite3.connect(':memory:')
+        create_table_if_not_exists(conn)  # Crear la tabla al conectar
+        return conn
     else:
-        # Conectar a MySQL para producción
-        return mysql.connector.connect(
+        # Conectar a MySQL en producción
+        conn = mysql.connector.connect(
             host='172.31.91.98',
             user='nico',
             password='nicole08',
             database='USERS'
         )
+        return conn
 
-@app.before_first_request
-def setup_database():
-    if 'test' in app.config['ENV']:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS table1 (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                nombre_usuario TEXT,
-                correo TEXT,
-                contrasena TEXT,
-                fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        conn.commit()
-        conn.close()
+def create_table_if_not_exists(conn):
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS table1 (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre_usuario TEXT,
+            correo TEXT,
+            contrasena TEXT,
+            fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    cursor.close()
 
 @app.route('/')
 def hello_world():
