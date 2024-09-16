@@ -34,19 +34,31 @@ def add_user():
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute(
-        'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (%s, %s, %s)',
-        (nombre_usuario, correo, contrasena)
-    )
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return jsonify({'message': 'User added successfully!'})
+    try:
+        if os.getenv('FLASK_ENV') == 'testing':
+            cursor.execute(
+                'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (?, ?, ?)',
+                (nombre_usuario, correo, contrasena)
+            )
+        else:
+            cursor.execute(
+                'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (%s, %s, %s)',
+                (nombre_usuario, correo, contrasena)
+            )
+        conn.commit()
+        return jsonify({'message': 'User added successfully!'})
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'message': 'Failed to add user'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+        return jsonify({'message': 'User added successfully!'})
 
 @app.route('/users', methods=['GET'])
 def get_users():
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
     cursor.execute('SELECT nombre_usuario, correo FROM table1')
     rows = cursor.fetchall()
     cursor.close()
