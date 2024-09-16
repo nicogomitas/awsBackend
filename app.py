@@ -1,17 +1,17 @@
 import os
 from flask import Flask, jsonify, request
 import mysql.connector
-import sqlite3
 from flask_cors import CORS
 
 app = Flask(__name__)
 
 # Configuración de CORS para permitir solicitudes desde tu frontend
 CORS(app, resources={r"/*": {"origins": "http://ec2-18-205-177-229.compute-1.amazonaws.com:3000"}})
+
 # Configuración de conexión a la base de datos
 def get_db_connection():
     if os.getenv('FLASK_ENV') == 'testing':
-        return sqlite3.connect(':memory:')
+        raise RuntimeError("In test environment, use a different script to handle database operations")
     else:
         return mysql.connector.connect(
             host='172.31.91.98',
@@ -19,7 +19,6 @@ def get_db_connection():
             password='nicole08',
             database='USERS'
         )
-
 
 @app.route('/')
 def hello_world():
@@ -35,16 +34,10 @@ def add_user():
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        if os.getenv('FLASK_ENV') == 'testing':
-            cursor.execute(
-                'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (?, ?, ?)',
-                (nombre_usuario, correo, contrasena)
-            )
-        else:
-            cursor.execute(
-                'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (%s, %s, %s)',
-                (nombre_usuario, correo, contrasena)
-            )
+        cursor.execute(
+            'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (%s, %s, %s)',
+            (nombre_usuario, correo, contrasena)
+        )
         conn.commit()
         return jsonify({'message': 'User added successfully!'})
     except Exception as e:
@@ -53,7 +46,6 @@ def add_user():
     finally:
         cursor.close()
         conn.close()
-        return jsonify({'message': 'User added successfully!'})
 
 @app.route('/users', methods=['GET'])
 def get_users():
@@ -67,4 +59,3 @@ def get_users():
 
 if __name__ == '__main__':
     app.run(port=5000, host='0.0.0.0', debug=True)
-
