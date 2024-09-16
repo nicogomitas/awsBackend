@@ -22,10 +22,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install mysql-connector-python Flask Flask-Cors
+          pip install -r requirements.txt
 
       - name: Run tests
         env:
           CI: true
         run: |
-          python -m unittest discover -s venv -p "test_app.py"
+          python -m unittest discover -s . -p "test_app.py"
