@@ -1,4 +1,5 @@
 import os
+import sqlite3  # Asegúrate de importar sqlite3
 from flask import Flask, jsonify, request
 import mysql.connector
 from flask_cors import CORS
@@ -8,11 +9,12 @@ app = Flask(__name__)
 # Configuración de CORS para permitir solicitudes desde tu frontend
 CORS(app, resources={r"/*": {"origins": "http://ec2-18-205-177-229.compute-1.amazonaws.com:3000"}})
 
-# Configuración de conexión a la base de datos
 def get_db_connection():
     if os.getenv('FLASK_ENV') == 'testing':
-        raise RuntimeError("In test environment, use a different script to handle database operations")
+        # Usar SQLite en memoria para pruebas
+        return sqlite3.connect(':memory:')
     else:
+        # Conectar a MySQL para producción
         return mysql.connector.connect(
             host='172.31.91.98',
             user='nico',
@@ -59,4 +61,5 @@ def get_users():
 
 if __name__ == '__main__':
     app.run(port=5000, host='0.0.0.0', debug=True)
+
 
