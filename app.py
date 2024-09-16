@@ -52,11 +52,15 @@ def add_user():
 
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    # Usar diferentes marcadores de posición para SQLite y MySQL
+    if os.getenv('FLASK_ENV') == 'testing':
+        query = 'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (?, ?, ?)'
+    else:
+        query = 'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (%s, %s, %s)'
+
     try:
-        cursor.execute(
-            'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (%s, %s, %s)',
-            (nombre_usuario, correo, contrasena)
-        )
+        cursor.execute(query, (nombre_usuario, correo, contrasena))
         conn.commit()
         return jsonify({'message': 'User added successfully!'})
     except Exception as e:
