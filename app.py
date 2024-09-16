@@ -74,11 +74,14 @@ def add_user():
 def get_users():
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT id, nombre_usuario, correo FROM table1')  # Incluye el 'id'
+    cursor.execute('SELECT id, nombre_usuario, correo FROM table1')
     rows = cursor.fetchall()
     cursor.close()
     conn.close()
-    return jsonify(rows)
+    # Convertir los datos a un formato de diccionario
+    users = [{'id': row[0], 'nombre_usuario': row[1], 'correo': row[2]} for row in rows]
+    return jsonify(users)
+
 
 
 if __name__ == '__main__':
