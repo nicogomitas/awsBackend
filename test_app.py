@@ -1,7 +1,7 @@
 import unittest
 import os
 import sqlite3
-from app import app, get_db_connection
+from app import app
 
 class FlaskTestCase(unittest.TestCase):
     def setUp(self):
@@ -9,8 +9,8 @@ class FlaskTestCase(unittest.TestCase):
         self.app = app.test_client()
         self.app.testing = True
 
-        # Crear la tabla en SQLite en memoria
-        self.conn = sqlite3.connect(':memory:')  # Usar SQLite en memoria directamente aquí
+        # Crear la base de datos en memoria
+        self.conn = sqlite3.connect(':memory:')
         cursor = self.conn.cursor()
 
         # Crear tabla si no existe
@@ -24,6 +24,9 @@ class FlaskTestCase(unittest.TestCase):
         ''')
         self.conn.commit()
         cursor.close()
+
+        # Reemplazar get_db_connection con la conexión SQLite en memoria
+        app.get_db_connection = lambda: self.conn
 
     def tearDown(self):
         cursor = self.conn.cursor()
@@ -56,3 +59,4 @@ class FlaskTestCase(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
