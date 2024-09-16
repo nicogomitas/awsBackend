@@ -74,11 +74,12 @@ def add_user():
 def get_users():
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT nombre_usuario, correo FROM table1')
+    cursor.execute('SELECT id, nombre_usuario, correo FROM table1')  # Incluye el 'id'
     rows = cursor.fetchall()
     cursor.close()
     conn.close()
     return jsonify(rows)
+
 
 if __name__ == '__main__':
     app.run(port=5000, host='0.0.0.0', debug=True)
