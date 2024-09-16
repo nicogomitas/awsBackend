@@ -5,7 +5,7 @@ from flask_cors import CORS
 app = Flask(__name__)
 
 # Configuración de CORS para permitir solicitudes desde tu frontend
-CORS(app, resources={r"/*": {"origins": "http://ec2-44-203-140-8.compute-1.amazonaws.com:3000"}})
+CORS(app, resources={r"/*": {"origins": "http://ec2-18-205-177-229.compute-1.amazonaws.com:3000"}})
 # Configuración de conexión a la base de datos
 def get_db_connection():
     return mysql.connector.connect(
