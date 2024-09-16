@@ -8,12 +8,16 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "http://ec2-18-205-177-229.compute-1.amazonaws.com:3000"}})
 # Configuración de conexión a la base de datos
 def get_db_connection():
-    return mysql.connector.connect(
-        host='172.31.91.98',  # IP privada de tu servidor MySQL
-        user='nico',          # Usuario de MySQL
-        password='nicole08',  # Contraseña de MySQL
-        database='USERS'      # Nombre de la base de datos
-    )
+    if os.getenv('FLASK_ENV') == 'testing':
+        return sqlite3.connect(':memory:')
+    else:
+        return mysql.connector.connect(
+            host='172.31.91.98',
+            user='nico',
+            password='nicole08',
+            database='USERS'
+        )
+
 
 @app.route('/')
 def hello_world():
