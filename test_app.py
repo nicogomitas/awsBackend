@@ -15,7 +15,7 @@ class FlaskTestCase(unittest.TestCase):
 
         # Crear tabla si no existe
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS table1 (
+            CREATE TABLE table1 (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 nombre_usuario TEXT NOT NULL,
                 correo TEXT NOT NULL,
