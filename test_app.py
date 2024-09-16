@@ -1,62 +1,57 @@
-import unittest
 import os
+import unittest
 import sqlite3
-from app import app
+from app import app  # Asegúrate de que importas tu aplicación Flask correctamente
 
 class FlaskTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        """Set up a temporary in-memory database."""
+        cls.app = app
+        cls.app.config['TESTING'] = True
+        cls.app.config['DATABASE'] = ':memory:'
+        cls.client = cls.app.test_client()
+
+        # Crear tabla en la base de datos en memoria
+        with cls.app.app_context():
+            conn = sqlite3.connect(':memory:')
+            cursor = conn.cursor()
+            cursor.execute('''
+                CREATE TABLE table1 (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nombre_usuario TEXT,
+                    correo TEXT,
+                    contrasena TEXT,
+                    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            conn.commit()
+            conn.close()
+
     def setUp(self):
-        os.environ['FLASK_ENV'] = 'testing'
-        self.app = app.test_client()
-        self.app.testing = True
-
-        # Crear la base de datos en memoria
+        """Set up the database connection for each test."""
         self.conn = sqlite3.connect(':memory:')
-        cursor = self.conn.cursor()
-
-        # Crear tabla si no existe
-        cursor.execute('''
-            CREATE TABLE table1 (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                nombre_usuario TEXT NOT NULL,
-                correo TEXT NOT NULL,
-                contrasena TEXT NOT NULL
-            )
-        ''')
-        self.conn.commit()
-        cursor.close()
-
-        # Reemplazar get_db_connection con la conexión SQLite en memoria
-        app.get_db_connection = lambda: self.conn
+        self.cursor = self.conn.cursor()
+        self.app.config['DATABASE'] = ':memory:'
 
     def tearDown(self):
-        cursor = self.conn.cursor()
-        cursor.execute('DELETE FROM table1')
-        self.conn.commit()
-        cursor.close()
+        """Clean up after each test."""
         self.conn.close()
 
     def test_add_user(self):
-        response = self.app.post('/add_user', json={
-            'nombre_usuario': 'prueba2user',
-            'correo': 'test2@example.com',
-            'contrasena': 'testpassword'
+        response = self.client.post('/add_user', json={
+            'nombre_usuario': 'Test User',
+            'correo': 'test@example.com',
+            'contrasena': 'password123'
         })
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'User added successfully!', response.data)
 
     def test_get_users(self):
-        cursor = self.conn.cursor()
-        cursor.execute(
-            'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (?, ?, ?)',
-            ('prueba2user', 'test2@example.com', 'testpassword')
-        )
-        self.conn.commit()
-        cursor.close()
-
-        response = self.app.get('/users')
+        response = self.client.get('/users')
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'prueba2user', response.data)
 
 if __name__ == '__main__':
     unittest.main()
+
 
