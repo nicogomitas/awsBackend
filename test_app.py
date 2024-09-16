@@ -10,7 +10,7 @@ class FlaskTestCase(unittest.TestCase):
         self.app.testing = True
 
         # Crear la tabla en SQLite en memoria
-        self.conn = get_db_connection()
+        self.conn = sqlite3.connect(':memory:')  # Usar SQLite en memoria directamente aquí
         cursor = self.conn.cursor()
 
         # Crear tabla si no existe
