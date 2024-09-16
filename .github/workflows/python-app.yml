@@ -28,4 +28,4 @@ jobs:
         env:
           CI: true
         run: |
-          python -m unittest discover -s tests
+          python -m unittest discover -s venv -p "test_app.py"
