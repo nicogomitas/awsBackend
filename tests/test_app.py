@@ -1,13 +1,58 @@
 import unittest
-from flask import Flask, json
+from flask import Flask, json, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import requests
 
+# Configuración de la aplicación Flask y base de datos
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
 db = SQLAlchemy(app)
 
-# Define tus modelos aquí
+# Modelo de ejemplo para la base de datos
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nombre_usuario = db.Column(db.String(80), unique=True, nullable=False)
+    correo = db.Column(db.String(120), unique=True, nullable=False)
+    contrasena = db.Column(db.String(120), nullable=False)
+
+@app.route('/')
+def hello_world():
+    return 'Hello, World!'
+
+@app.route('/add_user', methods=['POST'])
+def add_user():
+    data = request.get_json()
+    nombre_usuario = data.get('nombre_usuario')
+    correo = data.get('correo')
+    contrasena = data.get('contrasena')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (%s, %s, %s)',
+        (nombre_usuario, correo, contrasena)
+    )
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return jsonify({'message': 'User added successfully!'})
+
+@app.route('/users')
+def get_users():
+    users = User.query.all()
+    return jsonify([{
+        'nombre_usuario': user.nombre_usuario,
+        'correo': user.correo
+    } for user in users])
+
+def get_db_connection():
+    import mysql.connector
+    return mysql.connector.connect(
+        host='localhost',
+        user='yourusername',
+        password='yourpassword',
+        database='yourdatabase'
+    )
 
 class FlaskTestCase(unittest.TestCase):
     @classmethod
@@ -49,3 +94,5 @@ class FlaskTestCase(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
