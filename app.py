@@ -10,8 +10,10 @@ CORS(app, resources={r"/*": {"origins": "http://ec2-18-205-177-229.compute-1.ama
 
 # Configuración de conexión a la base de datos
 def get_db_connection():
-    if os.getenv('FLASK_ENV') == 'testing':
-        raise RuntimeError("In test environment, use a different script to handle database operations")
+    env = os.getenv('FLASK_ENV')
+    print(f"FLASK_ENV: {env}")  # Debugging line
+    if env == 'testing':
+        return sqlite3.connect(':memory:')  # Usar SQLite en memoria
     else:
         return mysql.connector.connect(
             host='172.31.91.98',
