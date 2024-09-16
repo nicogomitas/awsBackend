@@ -25,12 +25,16 @@ class FlaskTestCase(unittest.TestCase):
         cursor.close()
 
     def tearDown(self):
+        cursor = self.conn.cursor()
+        cursor.execute('DELETE FROM table1')
+        self.conn.commit()
+        cursor.close()
         self.conn.close()
 
     def test_add_user(self):
         response = self.app.post('/add_user', json={
-            'nombre_usuario': 'testuser',
-            'correo': 'testuser@example.com',
+            'nombre_usuario': 'prueba2user',
+            'correo': 'test2@example.com',
             'contrasena': 'testpassword'
         })
         self.assertEqual(response.status_code, 200)
@@ -40,14 +44,14 @@ class FlaskTestCase(unittest.TestCase):
         cursor = self.conn.cursor()
         cursor.execute(
             'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (%s, %s, %s)',
-            ('testuser', 'testuser@example.com', 'testpassword')
+            ('prueba2user', 'test2@example.com', 'testpassword')
         )
         self.conn.commit()
         cursor.close()
 
         response = self.app.get('/users')
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'testuser', response.data)
+        self.assertIn(b'prueba2user', response.data)
 
 if __name__ == '__main__':
     unittest.main()
