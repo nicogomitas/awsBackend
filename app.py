@@ -13,31 +13,16 @@ def get_db_connection():
     if os.getenv('FLASK_ENV') == 'testing':
         # Usar SQLite en memoria para pruebas
         conn = sqlite3.connect(':memory:')
-        create_table_if_not_exists(conn)  # Crear la tabla al conectar
         return conn
     else:
-        # Conectar a MySQL en producción
+        # Conectar a RDS MySQL en producción (Sakila)
         conn = mysql.connector.connect(
-            host='172.31.91.98',
-            user='nico',
-            password='nicole08',
-            database='USERS'
+            host='database-1.cwvowkzte4qa.us-east-1.rds.amazonaws.com',  # Cambia al endpoint RDS
+            user='nico',  # Reemplaza con tu usuario
+            password='nicole08',  # Reemplaza con tu contraseña
+            database='sakila'  # Usar la base de datos Sakila
         )
         return conn
-
-def create_table_if_not_exists(conn):
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS table1 (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre_usuario TEXT,
-            correo TEXT,
-            contrasena TEXT,
-            fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    conn.commit()
-    cursor.close()
 
 @app.route('/')
 def hello_world():
@@ -54,10 +39,7 @@ def add_user():
     cursor = conn.cursor()
 
     # Usar diferentes marcadores de posición para SQLite y MySQL
-    if os.getenv('FLASK_ENV') == 'testing':
-        query = 'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (?, ?, ?)'
-    else:
-        query = 'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (%s, %s, %s)'
+    query = 'INSERT INTO table1 (nombre_usuario, correo, contrasena) VALUES (%s, %s, %s)'
 
     try:
         cursor.execute(query, (nombre_usuario, correo, contrasena))
@@ -82,9 +64,58 @@ def get_users():
     users = [{'id': row[0], 'nombre_usuario': row[1], 'correo': row[2]} for row in rows]
     return jsonify(users)
 
+@app.route('/add_rental', methods=['POST'])
+def add_rental():
+    data = request.get_json()
+    customer_id = data.get('customer_id')
+    film_id = data.get('film_id')
+    rental_date = data.get('rental_date')
 
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Insertar la renta en la tabla rental de Sakila
+    query = '''
+    INSERT INTO rental (rental_date, inventory_id, customer_id, staff_id, return_date)
+    VALUES (%s, (SELECT inventory_id FROM inventory WHERE film_id = %s LIMIT 1), %s, 1, NULL)
+    '''
+
+    try:
+        cursor.execute(query, (rental_date, film_id, customer_id))
+        conn.commit()
+        return jsonify({'message': 'Rental added successfully!'})
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'message': 'Failed to add rental'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/customers', methods=['GET'])
+def get_customers():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT customer_id, first_name, last_name, email FROM customer')
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    # Convertir los datos a un formato de diccionario
+    customers = [{'customer_id': row[0], 'first_name': row[1], 'last_name': row[2], 'email': row[3]} for row in rows]
+    return jsonify(customers)
+
+@app.route('/films', methods=['GET'])
+def get_films():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT film_id, title FROM film')
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    # Convertir los datos a un formato de diccionario
+    films = [{'film_id': row[0], 'title': row[1]} for row in rows]
+    return jsonify(films)
 
 if __name__ == '__main__':
     app.run(port=5000, host='0.0.0.0', debug=True)
-
-
